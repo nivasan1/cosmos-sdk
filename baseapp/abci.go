@@ -205,7 +205,7 @@ func (app *BaseApp) BeginBlock(req abci.RequestBeginBlock) (res abci.ResponseBeg
 			panic(fmt.Errorf("BeginBlock listening hook failed, height: %d, err: %w", req.Header.Height, err))
 		}
 	}
-
+	app.logger.Info("gas consumed", "height", req.Header.Height, "gas", gasMeter.GasConsumed())
 	return res
 }
 
