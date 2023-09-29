@@ -582,7 +582,13 @@ func (app *BaseApp) getContextForTx(mode runTxMode, txBytes []byte) sdk.Context 
 		WithTxBytes(txBytes).
 		WithVoteInfos(app.voteInfos)
 
+	app.Logger().Info("getContextForTx Gas", "GasMeter", ctx.GasMeter().GasConsumedToLimit(), "TxBytes", txBytes, "Mode", mode)
+
+	cp := app.GetConsensusParams(ctx)
 	ctx = ctx.WithConsensusParams(app.GetConsensusParams(ctx))
+
+	app.Logger().Info("get context for Tx gas after getting consensus-params", "GasMeter", ctx.GasMeter().GasConsumedToLimit(), "TxBytes", txBytes, "Mode", mode)
+	app.Logger().Info("consensus-params", "cp", cp)
 
 	if mode == runTxModeReCheck {
 		ctx = ctx.WithIsReCheckTx(true)

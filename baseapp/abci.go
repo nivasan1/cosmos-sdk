@@ -49,10 +49,6 @@ func (app *BaseApp) InitChain(req abci.RequestInitChain) (res abci.ResponseInitC
 	// or processing the first block or not.
 	app.initialHeight = req.InitialHeight
 
-	if app.initialHeight == 0 { // If initial height is 0, set it to 1
-        app.initialHeight = 1
-    }
-
 	// if req.InitialHeight is > 1, then we set the initial version on all stores
 	if req.InitialHeight > 1 {
 		initHeader.Height = req.InitialHeight
@@ -176,6 +172,7 @@ func (app *BaseApp) BeginBlock(req abci.RequestBeginBlock) (res abci.ResponseBeg
 	if app.deliverState == nil {
 		app.setState(runTxModeDeliver, req.Header)
 	} else {
+		app.logger.Info("begin-block gas consumption before begin block execution", "height", req.Header.Height, "gas", app.deliverState.ctx.GasMeter().GasConsumed())
 		// In the first block, app.deliverState.ctx will already be initialized
 		// by InitChain. Context is now updated with Header information.
 		app.deliverState.ctx = app.deliverState.ctx.
@@ -209,7 +206,7 @@ func (app *BaseApp) BeginBlock(req abci.RequestBeginBlock) (res abci.ResponseBeg
 			panic(fmt.Errorf("BeginBlock listening hook failed, height: %d, err: %w", req.Header.Height, err))
 		}
 	}
-	app.logger.Info("gas consumed", "height", req.Header.Height, "gas", gasMeter.GasConsumed())
+	app.logger.Info("begin block gas consumed", "height", req.Header.Height, "gas-consumed", app.deliverState.ctx.GasMeter().GasConsumed())
 	return res
 }
 
