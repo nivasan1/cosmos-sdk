@@ -630,6 +630,9 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 	ctx := app.getContextForTx(mode, txBytes)
 	ms := ctx.MultiStore()
 
+	// log gas consumed here
+	app.logger.Info("gas consumed", "block-gas", ctx.BlockGasMeter().GasConsumed(), "txs-gas", ctx.GasMeter().GasConsumed())	
+
 	// only run the tx if there is block gas remaining
 	if mode == runTxModeDeliver && ctx.BlockGasMeter().IsOutOfGas() {
 		return gInfo, nil, nil, 0, sdkerrors.Wrap(sdkerrors.ErrOutOfGas, "no block gas left to run tx")
@@ -640,8 +643,8 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 			recoveryMW := newOutOfGasRecoveryMiddleware(gasWanted, ctx, app.runTxRecoveryMiddleware)
 			err, result = processRecovery(r, recoveryMW), nil
 		}
-
 		gInfo = sdk.GasInfo{GasWanted: gasWanted, GasUsed: ctx.GasMeter().GasConsumed()}
+		app.logger.Info("gInfo", "gInfo", gInfo)
 	}()
 
 	blockGasConsumed := false
@@ -652,6 +655,7 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 	consumeBlockGas := func() {
 		if !blockGasConsumed {
 			blockGasConsumed = true
+			app.logger.Info("block gas meter", "gas", ctx.BlockGasMeter().GasConsumed(), "limit", ctx.GasMeter().GasConsumedToLimit())
 			ctx.BlockGasMeter().ConsumeGas(
 				ctx.GasMeter().GasConsumedToLimit(), "block gas meter",
 			)
@@ -670,6 +674,7 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 
 	tx, err := app.txDecoder(txBytes)
 	if err != nil {
+		app.logger.Info("tx decode failed", "txBytes", txBytes)
 		return sdk.GasInfo{}, nil, nil, 0, err
 	}
 
