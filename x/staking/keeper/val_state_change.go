@@ -164,7 +164,8 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 
 		// if we get to a zero-power validator (which we don't bond),
 		// there are no more possible bonded validators
-		if validator.PotentialConsensusPower(k.PowerReduction(ctx)) == 0 {
+		if consensusPower := validator.PotentialConsensusPower(k.PowerReduction(ctx)); consensusPower == 0 {
+			k.Logger(ctx).Info("zero-power validator found", "validator", validator.Tokens)
 			break
 		}
 
