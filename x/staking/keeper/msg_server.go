@@ -153,7 +153,12 @@ func (k msgServer) CreateValidator(ctx context.Context, msg *types.MsgCreateVali
 		),
 	})
 
-	k.Logger(ctx).Info("Validator created", "validator", msg.ValidatorAddress, "delegator", msg.DelegatorAddress, "tokens", validator.Tokens)
+	validator, err = k.GetValidator(ctx, valAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	k.Logger(ctx).Info("Validator created", "validator", msg.ValidatorAddress, "delegator", msg.DelegatorAddress, "tokens", validator.Tokens.Int64())
 
 	return &types.MsgCreateValidatorResponse{}, nil
 }
