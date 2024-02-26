@@ -66,10 +66,24 @@ func (t testValidator) toValidator(power int64) abci.Validator {
 	}
 }
 
+type validatorWrapper struct {
+	v abci.Validator
+}
+
+func (w validatorWrapper) Power() int64 {
+	return w.v.Power
+}
+
+func (w validatorWrapper) Address() []byte {
+	return sdk.ConsAddress(w.v.Address)
+}
+
 func (t testValidator) toSDKValidator(power int64) comet.Validator {
-	return comet.Validator{
-		Address: t.consAddr.Bytes(),
-		Power:   power,
+	return &validatorWrapper{
+		v: abci.Validator{	
+			Address: t.consAddr.Bytes(),
+			Power:   power,
+		},
 	}
 }
 
@@ -739,26 +753,83 @@ func setTxSignatureWithSecret(t *testing.T, builder client.TxBuilder, signatures
 	require.NoError(t, err)
 }
 
-func extendedCommitToLastCommit(ec abci.ExtendedCommitInfo) (abci.ExtendedCommitInfo, comet.Info) {
+type blockInfo struct {
+	LastCommit abci.CommitInfo
+}
+
+func (r blockInfo) GetEvidence() comet.EvidenceList {
+	return nil
+}
+
+func (r blockInfo) GetValidatorsHash() []byte {
+	return nil
+}
+
+func (r blockInfo) GetProposerAddress() []byte {
+	return nil
+}
+
+func (r blockInfo) GetLastCommit() comet.CommitInfo {
+	return commitInfo{r.LastCommit}
+}
+
+type commitInfo struct {
+	ci abci.CommitInfo
+}
+
+func (ci commitInfo) Round() int32 {
+	return ci.ci.Round
+}
+
+func (ci commitInfo) Votes() comet.VoteInfos {
+	return voteInfosWrapper{ci.ci.Votes}
+}
+
+type voteInfosWrapper struct {
+	vi []abci.VoteInfo
+}
+
+func (vi voteInfosWrapper) Len() int {
+	return len(vi.vi)
+}
+
+func (vi voteInfosWrapper) Get(i int) comet.VoteInfo {
+	return voteInfoWrapper{vi.vi[i]}
+}
+
+
+type voteInfoWrapper struct {
+	vi abci.VoteInfo
+}
+
+func (v voteInfoWrapper) GetBlockIDFlag() comet.BlockIDFlag {
+	return comet.BlockIDFlag(v.vi.BlockIdFlag)
+}
+
+func (v voteInfoWrapper) Validator() comet.Validator {
+	return validatorWrapper{v.vi.Validator}
+}
+
+func extendedCommitToLastCommit(ec abci.ExtendedCommitInfo) (abci.ExtendedCommitInfo, comet.BlockInfo) {
 	// sort the extended commit info
 	sort.Sort(extendedVoteInfos(ec.Votes))
 
 	// convert the extended commit info to last commit info
-	lastCommit := comet.CommitInfo{
+	lastCommit := abci.CommitInfo{
 		Round: ec.Round,
-		Votes: make([]comet.VoteInfo, len(ec.Votes)),
+		Votes: make([]abci.VoteInfo, len(ec.Votes)),
 	}
 
 	for i, vote := range ec.Votes {
-		lastCommit.Votes[i] = comet.VoteInfo{
-			Validator: comet.Validator{
+		lastCommit.Votes[i] = abci.VoteInfo{
+			Validator: abci.Validator{
 				Address: vote.Validator.Address,
 				Power:   vote.Validator.Power,
 			},
 		}
 	}
 
-	return ec, comet.Info{
+	return ec, blockInfo{
 		LastCommit: lastCommit,
 	}
 }
@@ -770,10 +841,10 @@ func (v voteInfos) Len() int {
 }
 
 func (v voteInfos) Less(i, j int) bool {
-	if v[i].Validator.Power == v[j].Validator.Power {
-		return bytes.Compare(v[i].Validator.Address, v[j].Validator.Address) == -1
+	if v[i].Validator().Power() == v[j].Validator().Power() {
+		return bytes.Compare(v[i].Validator().Address(), v[j].Validator().Address()) == -1
 	}
-	return v[i].Validator.Power > v[j].Validator.Power
+	return v[i].Validator().Power() > v[j].Validator().Power()
 }
 
 func (v voteInfos) Swap(i, j int) {

@@ -47,7 +47,7 @@ func ValidateVoteExtensions(
 	cp := ctx.ConsensusParams()
 	currentHeight := ctx.BlockHeight()
 	chainID := ctx.BlockHeader().ChainID
-	commitInfo := ctx.CometInfo().LastCommit
+	commitInfo := ctx.CometInfo().GetLastCommit()
 
 	// Check that both extCommit + commit are ordered in accordance with vp/address.
 	if err := validateExtendedCommitAgainstLastCommit(extCommit, commitInfo); err != nil {
@@ -150,13 +150,13 @@ func ValidateVoteExtensions(
 // [comet](https://github.com/cometbft/cometbft/blob/4ce0277b35f31985bbf2c25d3806a184a4510010/types/validator_set.go#L784).
 func validateExtendedCommitAgainstLastCommit(ec abci.ExtendedCommitInfo, lc comet.CommitInfo) error {
 	// check that the rounds are the same
-	if ec.Round != lc.Round {
+	if ec.Round != lc.Round() {
 		return fmt.Errorf("extended commit round %d does not match last commit round %d", ec.Round, lc.Round)
 	}
 
 	// check that the # of votes are the same
-	if len(ec.Votes) != len(lc.Votes) {
-		return fmt.Errorf("extended commit votes length %d does not match last commit votes length %d", len(ec.Votes), len(lc.Votes))
+	if len(ec.Votes) != lc.Votes().Len() {
+		return fmt.Errorf("extended commit votes length %d does not match last commit votes length %d", len(ec.Votes), lc.Votes().Len())
 	}
 
 	// check sort order of extended commit votes
@@ -178,11 +178,11 @@ func validateExtendedCommitAgainstLastCommit(ec abci.ExtendedCommitInfo, lc come
 		}
 		addressCache[string(vote.Validator.Address)] = struct{}{}
 
-		if !bytes.Equal(vote.Validator.Address, lc.Votes[i].Validator.Address) {
-			return fmt.Errorf("extended commit vote address %X does not match last commit vote address %X", vote.Validator.Address, lc.Votes[i].Validator.Address)
+		if !bytes.Equal(vote.Validator.Address, lc.Votes().Get(i).Validator().Address()) {
+			return fmt.Errorf("extended commit vote address %X does not match last commit vote address %X", vote.Validator.Address, lc.Votes().Get(i).Validator().Address())
 		}
-		if vote.Validator.Power != lc.Votes[i].Validator.Power {
-			return fmt.Errorf("extended commit vote power %d does not match last commit vote power %d", vote.Validator.Power, lc.Votes[i].Validator.Power)
+		if vote.Validator.Power != lc.Votes().Get(i).Validator().Power() {
+			return fmt.Errorf("extended commit vote power %d does not match last commit vote power %d", vote.Validator.Power, lc.Votes().Get(i).Validator().Power())
 		}
 	}
 
