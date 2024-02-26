@@ -38,19 +38,19 @@ type (
 // signatures that may be passed or manually injected into a block proposal from
 // a proposer in PrepareProposal. It returns an error if any signature is invalid
 // or if unexpected vote extensions and/or signatures are found or less than 2/3
-// power is received.
+// power is received. 
 func ValidateVoteExtensions(
 	ctx sdk.Context,
 	valStore ValidatorStore,
 	extCommit abci.ExtendedCommitInfo,
 ) error {
-	// get values from context
+	// Get values from context
 	cp := ctx.ConsensusParams()
 	currentHeight := ctx.BlockHeight()
-	chainID := ctx.ChainID()
+	chainID := ctx.BlockHeader().ChainID
 	commitInfo := ctx.CometInfo().LastCommit
 
-	// check that both extCommit + commit are ordered in accordance with vp/address.
+	// Check that both extCommit + commit are ordered in accordance with vp/address.
 	if err := validateExtendedCommitAgainstLastCommit(extCommit, commitInfo); err != nil {
 		return err
 	}
@@ -75,8 +75,7 @@ func ValidateVoteExtensions(
 		sumVP int64
 	)
 
-	cache := make(map[string]struct{})
-	for i, vote := range extCommit.Votes {
+	for _, vote := range extCommit.Votes {
 		totalVP += vote.Validator.Power
 
 		// Only check + include power if the vote is a commit vote. There must be super-majority, otherwise the
@@ -100,14 +99,9 @@ func ValidateVoteExtensions(
 			return fmt.Errorf("vote extensions enabled; received empty vote extension signature at height %d", currentHeight)
 		}
 
-		// Ensure that the validator has not already submitted a vote extension.
 		valConsAddr := sdk.ConsAddress(vote.Validator.Address)
-		if _, ok := cache[valConsAddr.String()]; ok {
-			return fmt.Errorf("duplicate validator; validator %s has already submitted a vote extension", valConsAddr.String())
-		}
-		cache[valConsAddr.String()] = struct{}{}
 
-		pubKeyProto, err := valStore.GetPubKeyByConsAddr(ctx, valConsAddr) // TODO: is this correlated with the previous block?
+		pubKeyProto, err := valStore.GetPubKeyByConsAddr(ctx, valConsAddr)
 		if err != nil {
 			return fmt.Errorf("failed to get validator %X public key: %w", valConsAddr, err)
 		}
@@ -169,15 +163,22 @@ func validateExtendedCommitAgainstLastCommit(ec abci.ExtendedCommitInfo, lc come
 	// check sort order of extended commit votes
 	if !slices.IsSortedFunc(ec.Votes, func(vote1, vote2 abci.ExtendedVoteInfo) int {
 		if vote1.Validator.Power == vote2.Validator.Power {
-			return -bytes.Compare(vote1.Validator.Address, vote2.Validator.Address) // addresses sorted in ascending order (used to break vp conflicts)
+			return bytes.Compare(vote1.Validator.Address, vote2.Validator.Address) // addresses sorted in ascending order (used to break vp conflicts)
 		}
 		return -int(vote1.Validator.Power - vote2.Validator.Power) // vp sorted in descending order
 	}) {
 		return fmt.Errorf("extended commit votes are not sorted by voting power")
 	}
 
+	addressCache := make(map[string]struct{}, len(ec.Votes))
 	// check that consistency between LastCommit and ExtendedCommit
 	for i, vote := range ec.Votes {
+		// cache addresses to check for duplicates
+		if _, ok := addressCache[string(vote.Validator.Address)]; ok {
+			return fmt.Errorf("extended commit vote address %X is duplicated", vote.Validator.Address)
+		}
+		addressCache[string(vote.Validator.Address)] = struct{}{}
+
 		if !bytes.Equal(vote.Validator.Address, lc.Votes[i].Validator.Address) {
 			return fmt.Errorf("extended commit vote address %X does not match last commit vote address %X", vote.Validator.Address, lc.Votes[i].Validator.Address)
 		}
