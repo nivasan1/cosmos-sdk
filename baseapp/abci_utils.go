@@ -50,7 +50,7 @@ func ValidateVoteExtensions(
 	commitInfo := ctx.CometInfo().GetLastCommit()
 
 	// Check that both extCommit + commit are ordered in accordance with vp/address.
-	if err := validateExtendedCommitAgainstLastCommit(extCommit, commitInfo); err != nil {
+	if err := validateExtendedCommitAgainstLastCommit(ctx, extCommit, commitInfo); err != nil {
 		return err
 	}
 
@@ -148,7 +148,7 @@ func ValidateVoteExtensions(
 // it checks that the ExtendedCommit + LastCommit (for the same height), are consistent with each other + that
 // they are ordered correctly (by voting power) in accordance with 
 // [comet](https://github.com/cometbft/cometbft/blob/4ce0277b35f31985bbf2c25d3806a184a4510010/types/validator_set.go#L784).
-func validateExtendedCommitAgainstLastCommit(ec abci.ExtendedCommitInfo, lc comet.CommitInfo) error {
+func validateExtendedCommitAgainstLastCommit(ctx sdk.Context, ec abci.ExtendedCommitInfo, lc comet.CommitInfo) error {
 	// check that the rounds are the same
 	if ec.Round != lc.Round() {
 		return fmt.Errorf("extended commit round %d does not match last commit round %d", ec.Round, lc.Round)
@@ -184,6 +184,8 @@ func validateExtendedCommitAgainstLastCommit(ec abci.ExtendedCommitInfo, lc come
 		if vote.Validator.Power != lc.Votes().Get(i).Validator().Power() {
 			return fmt.Errorf("extended commit vote power %d does not match last commit vote power %d", vote.Validator.Power, lc.Votes().Get(i).Validator().Power())
 		}
+
+		ctx.Logger().Info("verifying vote against last-commit", "ec address", vote.Validator.Address, "ec power", vote.Validator.Power, "lc addres", lc.Votes().Get(i).Validator().Address(), "lc power",  lc.Votes().Get(i).Validator().Power())
 	}
 
 	return nil
