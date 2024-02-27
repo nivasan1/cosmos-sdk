@@ -220,7 +220,6 @@ func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsSingleVoteAbsent() {
 	llc, info := extendedCommitToLastCommit(llc)
 	s.ctx = s.ctx.WithCometInfo(info)
 
-
 	// expect-pass (votes of height 2 are included in next block)
 	s.Require().NoError(baseapp.ValidateVoteExtensions(s.ctx, s.valStore, llc))
 }
@@ -254,7 +253,6 @@ func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsDuplicateVotes() {
 		ExtensionSignature: extSig0,
 		BlockIdFlag:        cmtproto.BlockIDFlagCommit,
 	}
-
 
 	llc := abci.ExtendedCommitInfo{
 		Round: 0,
@@ -420,7 +418,7 @@ func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsIncorrectVotingPower() {
 	llc.Votes[2].Validator.Power = 332
 
 	// expect-pass (votes of height 2 are included in next block)
-	s.Require().Error(baseapp.ValidateVoteExtensions(s.ctx, s.valStore, llc))	
+	s.Require().Error(baseapp.ValidateVoteExtensions(s.ctx, s.valStore, llc))
 }
 
 func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsIncorrecOrder() {

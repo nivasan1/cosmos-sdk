@@ -38,7 +38,7 @@ type (
 // signatures that may be passed or manually injected into a block proposal from
 // a proposer in PrepareProposal. It returns an error if any signature is invalid
 // or if unexpected vote extensions and/or signatures are found or less than 2/3
-// power is received. 
+// power is received.
 func ValidateVoteExtensions(
 	ctx sdk.Context,
 	valStore ValidatorStore,
@@ -147,7 +147,7 @@ func ValidateVoteExtensions(
 
 // validateExtendedCommitAgainstLastCommit validates an ExtendedCommitInfo against a LastCommit. Specifically,
 // it checks that the ExtendedCommit + LastCommit (for the same height), are consistent with each other + that
-// they are ordered correctly (by voting power) in accordance with 
+// they are ordered correctly (by voting power) in accordance with
 // [comet](https://github.com/cometbft/cometbft/blob/4ce0277b35f31985bbf2c25d3806a184a4510010/types/validator_set.go#L784).
 func validateExtendedCommitAgainstLastCommit(ec abci.ExtendedCommitInfo, lc comet.CommitInfo) error {
 	// check that the rounds are the same
@@ -171,7 +171,7 @@ func validateExtendedCommitAgainstLastCommit(ec abci.ExtendedCommitInfo, lc come
 	}
 
 	addressCache := make(map[string]struct{}, len(ec.Votes))
-	// check that consistency between LastCommit and ExtendedCommit
+	// check consistency between LastCommit and ExtendedCommit
 	for i, vote := range ec.Votes {
 		// cache addresses to check for duplicates
 		if _, ok := addressCache[string(vote.Validator.Address)]; ok {
