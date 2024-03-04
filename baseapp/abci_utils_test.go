@@ -198,7 +198,7 @@ func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsSingleVoteAbsent() {
 	extSig2, err := s.vals[2].privKey.Sign(bz)
 	s.Require().NoError(err)
 
-	s.ctx = s.ctx.WithBlockHeight(3) // vote-extensions are enabled
+	s.ctx = s.ctx.WithBlockHeight(3).WithHeaderInfo(header.Info{Height: 3, ChainID: chainID}) // vote-extensions are enabled
 
 	llc := abci.ExtendedCommitInfo{
 		Round: 0,
@@ -268,7 +268,7 @@ func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsDuplicateVotes() {
 		},
 	}
 
-	s.ctx = s.ctx.WithBlockHeight(3) // vote-extensions are enabled
+	s.ctx = s.ctx.WithBlockHeight(3).WithHeaderInfo(header.Info{Height: 3, ChainID: chainID}) // vote-extensions are enabled
 	llc, info := extendedCommitToLastCommit(llc)
 	s.ctx = s.ctx.WithCometInfo(info)
 
@@ -318,7 +318,7 @@ func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsSingleVoteNil() {
 		},
 	}
 
-	s.ctx = s.ctx.WithBlockHeight(3) // vote-extensions are enabled
+	s.ctx = s.ctx.WithBlockHeight(3).WithHeaderInfo(header.Info{Height: 3, ChainID: chainID}) // vote-extensions are enabled
 
 	// create last commit
 	llc, info := extendedCommitToLastCommit(llc)
@@ -366,7 +366,7 @@ func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsTwoVotesNilAbsent() {
 		},
 	}
 
-	s.ctx = s.ctx.WithBlockHeight(3) // vote-extensions are enabled
+	s.ctx = s.ctx.WithBlockHeight(3).WithHeaderInfo(header.Info{Height: 3, ChainID: chainID}) // vote-extensions are enabled
 
 	// create last commit
 	llc, info := extendedCommitToLastCommit(llc)
@@ -413,7 +413,7 @@ func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsIncorrectVotingPower() {
 		},
 	}
 
-	s.ctx = s.ctx.WithBlockHeight(3) // vote-extensions are enabled
+	s.ctx = s.ctx.WithBlockHeight(3).WithHeaderInfo(header.Info{Height: 3, ChainID: chainID}) // vote-extensions are enabled
 
 	// create last commit
 	llc, info := extendedCommitToLastCommit(llc)
@@ -427,7 +427,7 @@ func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsIncorrectVotingPower() {
 	s.Require().Error(baseapp.ValidateVoteExtensions(s.ctx, s.valStore, llc))
 }
 
-func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsIncorrecOrder() {
+func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsIncorrectOrder() {
 	ext := []byte("vote-extension")
 	cve := cmtproto.CanonicalVoteExtension{
 		Extension: ext,
@@ -464,7 +464,7 @@ func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsIncorrecOrder() {
 		},
 	}
 
-	s.ctx = s.ctx.WithBlockHeight(3) // vote-extensions are enabled
+	s.ctx = s.ctx.WithBlockHeight(3).WithHeaderInfo(header.Info{Height: 3, ChainID: chainID}) // vote-extensions are enabled
 
 	// create last commit
 	llc, info := extendedCommitToLastCommit(llc)
