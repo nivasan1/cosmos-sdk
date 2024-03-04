@@ -15,6 +15,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	"cosmossdk.io/core/comet"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
 )
@@ -45,8 +46,8 @@ func ValidateVoteExtensions(
 ) error {
 	// Get values from context
 	cp := ctx.ConsensusParams()
-	currentHeight := ctx.BlockHeight()
-	chainID := ctx.BlockHeader().ChainID
+	currentHeight := ctx.HeaderInfo().Height
+	chainID := ctx.HeaderInfo().ChainID
 	commitInfo := ctx.CometInfo().GetLastCommit()
 
 	// Check that both extCommit + commit are ordered in accordance with vp/address.

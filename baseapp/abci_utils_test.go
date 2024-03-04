@@ -17,9 +17,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	"cosmossdk.io/core/comet"
+	"cosmossdk.io/core/header"
 	"cosmossdk.io/log"
 
-	"cosmossdk.io/core/comet"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	baseapptestutil "github.com/cosmos/cosmos-sdk/baseapp/testutil"
 	"github.com/cosmos/cosmos-sdk/baseapp/testutil/mock"
@@ -76,15 +77,6 @@ func (w validatorWrapper) Power() int64 {
 
 func (w validatorWrapper) Address() []byte {
 	return sdk.ConsAddress(w.v.Address)
-}
-
-func (t testValidator) toSDKValidator(power int64) comet.Validator {
-	return &validatorWrapper{
-		v: abci.Validator{
-			Address: t.consAddr.Bytes(),
-			Power:   power,
-		},
-	}
 }
 
 type ABCIUtilsTestSuite struct {
@@ -153,7 +145,7 @@ func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsHappyPath() {
 	extSig2, err := s.vals[2].privKey.Sign(bz)
 	s.Require().NoError(err)
 
-	s.ctx = s.ctx.WithBlockHeight(3) // enable vote-extensions
+	s.ctx = s.ctx.WithBlockHeight(3).WithHeaderInfo(header.Info{Height: 3, ChainID: chainID}) // enable vote-extensions
 
 	llc := abci.ExtendedCommitInfo{
 		Round: 0,
@@ -751,62 +743,6 @@ func setTxSignatureWithSecret(t *testing.T, builder client.TxBuilder, signatures
 	require.NoError(t, err)
 }
 
-type blockInfo struct {
-	LastCommit abci.CommitInfo
-}
-
-func (r blockInfo) GetEvidence() comet.EvidenceList {
-	return nil
-}
-
-func (r blockInfo) GetValidatorsHash() []byte {
-	return nil
-}
-
-func (r blockInfo) GetProposerAddress() []byte {
-	return nil
-}
-
-func (r blockInfo) GetLastCommit() comet.CommitInfo {
-	return commitInfo{r.LastCommit}
-}
-
-type commitInfo struct {
-	ci abci.CommitInfo
-}
-
-func (ci commitInfo) Round() int32 {
-	return ci.ci.Round
-}
-
-func (ci commitInfo) Votes() comet.VoteInfos {
-	return voteInfosWrapper{ci.ci.Votes}
-}
-
-type voteInfosWrapper struct {
-	vi []abci.VoteInfo
-}
-
-func (vi voteInfosWrapper) Len() int {
-	return len(vi.vi)
-}
-
-func (vi voteInfosWrapper) Get(i int) comet.VoteInfo {
-	return voteInfoWrapper{vi.vi[i]}
-}
-
-type voteInfoWrapper struct {
-	vi abci.VoteInfo
-}
-
-func (v voteInfoWrapper) GetBlockIDFlag() comet.BlockIDFlag {
-	return comet.BlockIDFlag(v.vi.BlockIdFlag)
-}
-
-func (v voteInfoWrapper) Validator() comet.Validator {
-	return validatorWrapper{v.vi.Validator}
-}
-
 func extendedCommitToLastCommit(ec abci.ExtendedCommitInfo) (abci.ExtendedCommitInfo, comet.BlockInfo) {
 	// sort the extended commit info
 	sort.Sort(extendedVoteInfos(ec.Votes))
@@ -826,9 +762,12 @@ func extendedCommitToLastCommit(ec abci.ExtendedCommitInfo) (abci.ExtendedCommit
 		}
 	}
 
-	return ec, blockInfo{
-		LastCommit: lastCommit,
-	}
+	return ec, baseapp.NewBlockInfo(
+		nil,
+		nil,
+		nil,
+		lastCommit,
+	)
 }
 
 type extendedVoteInfos []abci.ExtendedVoteInfo
