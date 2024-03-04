@@ -37,7 +37,7 @@ type (
 // signatures that may be passed or manually injected into a block proposal from
 // a proposer in PrepareProposal. It returns an error if any signature is invalid
 // or if unexpected vote extensions and/or signatures are found or less than 2/3
-// power is received. 
+// power is received.
 func ValidateVoteExtensions(
 	ctx sdk.Context,
 	valStore ValidatorStore,
@@ -50,7 +50,7 @@ func ValidateVoteExtensions(
 	commitInfo := ctx.CometInfo().GetLastCommit()
 
 	// Check that both extCommit + commit are ordered in accordance with vp/address.
-	if err := validateExtendedCommitAgainstLastCommit(ctx, extCommit, commitInfo); err != nil {
+	if err := validateExtendedCommitAgainstLastCommit(extCommit, commitInfo); err != nil {
 		return err
 	}
 
@@ -146,9 +146,9 @@ func ValidateVoteExtensions(
 
 // validateExtendedCommitAgainstLastCommit validates an ExtendedCommitInfo against a LastCommit. Specifically,
 // it checks that the ExtendedCommit + LastCommit (for the same height), are consistent with each other + that
-// they are ordered correctly (by voting power) in accordance with 
+// they are ordered correctly (by voting power) in accordance with
 // [comet](https://github.com/cometbft/cometbft/blob/4ce0277b35f31985bbf2c25d3806a184a4510010/types/validator_set.go#L784).
-func validateExtendedCommitAgainstLastCommit(ctx sdk.Context, ec abci.ExtendedCommitInfo, lc comet.CommitInfo) error {
+func validateExtendedCommitAgainstLastCommit(ec abci.ExtendedCommitInfo, lc comet.CommitInfo) error {
 	// check that the rounds are the same
 	if ec.Round != lc.Round() {
 		return fmt.Errorf("extended commit round %d does not match last commit round %d", ec.Round, lc.Round)
@@ -184,8 +184,6 @@ func validateExtendedCommitAgainstLastCommit(ctx sdk.Context, ec abci.ExtendedCo
 		if vote.Validator.Power != lc.Votes().Get(i).Validator().Power() {
 			return fmt.Errorf("extended commit vote power %d does not match last commit vote power %d", vote.Validator.Power, lc.Votes().Get(i).Validator().Power())
 		}
-
-		ctx.Logger().Info("verifying vote against last-commit", "ec address", vote.Validator.Address, "ec power", vote.Validator.Power, "lc addres", lc.Votes().Get(i).Validator().Address(), "lc power",  lc.Votes().Get(i).Validator().Power())
 	}
 
 	return nil

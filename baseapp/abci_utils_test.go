@@ -80,7 +80,7 @@ func (w validatorWrapper) Address() []byte {
 
 func (t testValidator) toSDKValidator(power int64) comet.Validator {
 	return &validatorWrapper{
-		v: abci.Validator{	
+		v: abci.Validator{
 			Address: t.consAddr.Bytes(),
 			Power:   power,
 		},
@@ -234,7 +234,6 @@ func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsSingleVoteAbsent() {
 	llc, info := extendedCommitToLastCommit(llc)
 	s.ctx = s.ctx.WithCometInfo(info)
 
-
 	// expect-pass (votes of height 2 are included in next block)
 	s.Require().NoError(baseapp.ValidateVoteExtensions(s.ctx, s.valStore, llc))
 }
@@ -268,7 +267,6 @@ func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsDuplicateVotes() {
 		ExtensionSignature: extSig0,
 		BlockIdFlag:        cmtproto.BlockIDFlagCommit,
 	}
-
 
 	llc := abci.ExtendedCommitInfo{
 		Round: 0,
@@ -434,7 +432,7 @@ func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsIncorrectVotingPower() {
 	llc.Votes[2].Validator.Power = 332
 
 	// expect-pass (votes of height 2 are included in next block)
-	s.Require().Error(baseapp.ValidateVoteExtensions(s.ctx, s.valStore, llc))	
+	s.Require().Error(baseapp.ValidateVoteExtensions(s.ctx, s.valStore, llc))
 }
 
 func (s *ABCIUtilsTestSuite) TestValidateVoteExtensionsIncorrecOrder() {
@@ -797,7 +795,6 @@ func (vi voteInfosWrapper) Get(i int) comet.VoteInfo {
 	return voteInfoWrapper{vi.vi[i]}
 }
 
-
 type voteInfoWrapper struct {
 	vi abci.VoteInfo
 }
@@ -832,23 +829,6 @@ func extendedCommitToLastCommit(ec abci.ExtendedCommitInfo) (abci.ExtendedCommit
 	return ec, blockInfo{
 		LastCommit: lastCommit,
 	}
-}
-
-type voteInfos []comet.VoteInfo
-
-func (v voteInfos) Len() int {
-	return len(v)
-}
-
-func (v voteInfos) Less(i, j int) bool {
-	if v[i].Validator().Power() == v[j].Validator().Power() {
-		return bytes.Compare(v[i].Validator().Address(), v[j].Validator().Address()) == -1
-	}
-	return v[i].Validator().Power() > v[j].Validator().Power()
-}
-
-func (v voteInfos) Swap(i, j int) {
-	v[i], v[j] = v[j], v[i]
 }
 
 type extendedVoteInfos []abci.ExtendedVoteInfo
